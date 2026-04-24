@@ -1,6 +1,6 @@
 // ─── ANNUARIO SCOLASTICO EMOTIVO — Service Worker ─────────────────────────────
 const CACHE_NAME   = 'annuario-v1.1';
-const STATIC_CACHE = 'annuario-static-v1.1';
+const STATIC_CACHE = 'annuario-static-v1.2';
 
 const APP_SHELL = [
   './index.html',
