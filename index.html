@@ -3053,39 +3053,13 @@ function redeemCode() {
 
 function initTrial() {
   const license = getLicense();
-
-  // Già abbonato
-  if (license.status === 'premium') {
-    updateTopbarForPremium();
-    return;
-  }
-
-  // Primo avvio: registra data
-  if (!license.trialStart) {
-    license.trialStart = Date.now();
-    saveLicense(license);
-  }
-
-  const daysUsed    = Math.floor((Date.now() - license.trialStart) / 86400000);
-  const daysLeft    = Math.max(0, TRIAL_DAYS - daysUsed);
-  license.daysLeft  = daysLeft;
+  if (license.status === 'premium') { updateTopbarForPremium(); return; }
+  if (!license.trialStart) { license.trialStart = Date.now(); saveLicense(license); }
+  const daysUsed   = Math.floor((Date.now() - license.trialStart) / 86400000);
+  const daysLeft   = Math.max(0, TRIAL_DAYS - daysUsed);
+  license.daysLeft = daysLeft;
   saveLicense(license);
-
-  if (daysLeft > 0) {
-    // Trial attivo — mostra barra countdown
-    const bar = document.getElementById('trial-bar');
-    if (bar) {
-      bar.style.display = 'flex';
-      document.getElementById('trial-days-text').textContent =
-        daysLeft === 1 ? 'Ultimo giorno gratuito!' : `${daysLeft} giorni rimasti`;
-      // Urgenza visiva negli ultimi 5 giorni
-      if (daysLeft <= 5) bar.style.background = 'linear-gradient(135deg,#B04820,#D06030)';
-    }
-  } else {
-    // Trial scaduto — mostra paywall
-    showPaywall();
-    lockPremiumFeatures();
-  }
+  if (daysLeft <= 0) { showPaywall(); lockPremiumFeatures(); }
 }
 
 function getLicense() {
