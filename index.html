@@ -3088,19 +3088,32 @@ function selectPlan(plan) {
     `Abbonati — ${prices[plan]} →`;
 }
 
-function handleSubscribe() {
-  // In produzione: apri link Stripe o Lemonsqueezy
-  // Per ora mostra istruzioni con il link di pagamento
-  const links = {
-    monthly: 'https://buy.stripe.com/PLACEHOLDER_MONTHLY',
-    yearly:  'https://buy.stripe.com/PLACEHOLDER_YEARLY'
-  };
-  showToastMsg('Reindirizzamento al pagamento…');
-  setTimeout(() => {
-    // window.open(links[_selectedPlan], '_blank');
-    // Per demo: mostriamo solo il messaggio
-    showToastMsg('💳 Configura il link Stripe nel codice');
-  }, 1000);
+async function handleSubscribe() {
+  if (!_currentUser) { showToastMsg('Accedi prima di abbonarti.'); return; }
+  const btn = document.getElementById('paywall-cta-btn') || document.getElementById('abbonamento-cta');
+  if (btn) { btn.disabled = true; btn.textContent = 'Caricamento…'; }
+  try {
+    const sb = getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+    const resp = await fetch(SUPABASE_URL + '/functions/v1/create-checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token
+      },
+      body: JSON.stringify({ plan: _selectedPlan || 'yearly' })
+    });
+    const data = await resp.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      showToastMsg('Errore: ' + (data.error || 'riprova'));
+      if (btn) { btn.disabled = false; btn.textContent = 'Abbonati →'; }
+    }
+  } catch(e) {
+    showToastMsg('Errore di connessione. Riprova.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Abbonati →'; }
+  }
 }
 
 function redeemCode() {
@@ -3271,21 +3284,45 @@ async function initAuth() {
 }
 
 // ── Dopo il login riuscito ──────────────────────────────────────────────────
-function onUserLoggedIn(user) {
+async function onUserLoggedIn(user) {
   hideLoginScreen();
   updateTopbarUser(user);
-  // Usa il nome dall'user metadata o dall'email
   const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '';
-  // Precompila il profilo con il nome se non già presente
   const profilo = JSON.parse(localStorage.getItem('annuario_profilo') || '{}');
   if (!profilo.nome && name) {
     profilo.nome = name;
     localStorage.setItem('annuario_profilo', JSON.stringify(profilo));
   }
-  // Avvia l'app normalmente
   init();
   checkPendingNotifs();
+  // Controlla abbonamento Stripe prima di avviare il trial
+  await checkSubscriptionStatus();
   initTrial();
+  // Gestisci ritorno da Stripe
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment') === 'success') {
+    showToastMsg('🎉 Abbonamento attivato! Benvenuto/a!');
+    window.history.replaceState({}, '', window.location.pathname);
+  } else if (params.get('payment') === 'cancelled') {
+    showToastMsg('Pagamento annullato.');
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
+async function checkSubscriptionStatus() {
+  try {
+    const sb = getSupabase();
+    const { data, error } = await sb
+      .from('subscriptions')
+      .select('status, plan')
+      .eq('user_id', _currentUser.id)
+      .single();
+    if (!error && data && data.status === 'active') {
+      activatePremium('stripe_' + data.plan);
+    }
+  } catch(e) {
+    // Nessun abbonamento trovato -- procede con trial
+  }
 }
 
 function updateTopbarUser(user) {
