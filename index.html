@@ -3295,18 +3295,37 @@ async function onUserLoggedIn(user) {
   }
   init();
   checkPendingNotifs();
-  // Controlla abbonamento Stripe prima di avviare il trial
-  await checkSubscriptionStatus();
-  initTrial();
-  // Gestisci ritorno da Stripe
+
   const params = new URLSearchParams(window.location.search);
   if (params.get('payment') === 'success') {
-    showToastMsg('🎉 Abbonamento attivato! Benvenuto/a!');
+    // Ritorno da Stripe: aspetta webhook e riprova fino a 5 volte
     window.history.replaceState({}, '', window.location.pathname);
+    showToastMsg('Verifica pagamento in corso…');
+    const found = await waitForSubscription(5, 2500);
+    if (found) {
+      showToastMsg('🎉 Abbonamento attivato! Benvenuto/a!');
+    } else {
+      showToastMsg('Pagamento ricevuto -- accesso attivo a breve.');
+    }
+    initTrial();
   } else if (params.get('payment') === 'cancelled') {
-    showToastMsg('Pagamento annullato.');
     window.history.replaceState({}, '', window.location.pathname);
+    showToastMsg('Pagamento annullato.');
+    await checkSubscriptionStatus();
+    initTrial();
+  } else {
+    await checkSubscriptionStatus();
+    initTrial();
   }
+}
+
+async function waitForSubscription(maxTries, intervalMs) {
+  for (let i = 0; i < maxTries; i++) {
+    const found = await checkSubscriptionStatus();
+    if (found) return true;
+    if (i < maxTries - 1) await new Promise(r => setTimeout(r, intervalMs));
+  }
+  return false;
 }
 
 async function checkSubscriptionStatus() {
@@ -3319,10 +3338,12 @@ async function checkSubscriptionStatus() {
       .single();
     if (!error && data && data.status === 'active') {
       activatePremium('stripe_' + data.plan);
+      return true;
     }
   } catch(e) {
-    // Nessun abbonamento trovato -- procede con trial
+    // Nessun abbonamento trovato
   }
+  return false;
 }
 
 function updateTopbarUser(user) {
