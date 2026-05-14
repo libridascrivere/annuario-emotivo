@@ -3081,15 +3081,40 @@ function hidePaywall() {
 let _selectedPlan = 'yearly';
 function selectPlan(plan) {
   _selectedPlan = plan;
-  // Aggiorna tutte le card piano (ce ne sono due set: paywall overlay + sezione account)
+
+  // -- Paywall overlay: usa classe CSS recommended --
   document.querySelectorAll('.paywall-plan').forEach(p => p.classList.remove('recommended'));
-  document.querySelectorAll(`[id="plan-${plan}"]`).forEach(el => el.classList.add('recommended'));
+  const overlayCard = document.querySelector(`.paywall-plan#plan-${plan}`);
+  if (overlayCard) overlayCard.classList.add('recommended');
+
+  // -- Sezione Account: usa stili inline --
+  const mCard = document.getElementById('plan-monthly');
+  const yCard = document.getElementById('plan-yearly');
+  // Potrebbe trovare quelli del paywall overlay -- prendi il secondo (account)
+  const allMonthly = document.querySelectorAll('#plan-monthly');
+  const allYearly  = document.querySelectorAll('#plan-yearly');
+  const accMonthly = allMonthly[allMonthly.length - 1];
+  const accYearly  = allYearly[allYearly.length - 1];
+
+  if (accMonthly && accYearly) {
+    if (plan === 'monthly') {
+      accMonthly.style.border = '2px solid var(--lav-deep)';
+      accMonthly.style.background = 'var(--lav-pale)';
+      accYearly.style.border  = '2px solid var(--lav-box)';
+      accYearly.style.background = '';
+    } else {
+      accYearly.style.border  = '2px solid var(--lav-deep)';
+      accYearly.style.background = 'var(--lav-pale)';
+      accMonthly.style.border = '2px solid var(--lav-box)';
+      accMonthly.style.background = '';
+    }
+  }
+
+  // -- Aggiorna testi bottoni --
   const labels = { monthly:'piano mensile', yearly:'piano annuale' };
   const prices = { monthly:'3,90€/mese', yearly:'29,90€/anno' };
-  // Bottone paywall overlay
   const cta1 = document.getElementById('paywall-cta-btn');
   if (cta1) cta1.textContent = `Abbonati — ${prices[plan]} →`;
-  // Bottone sezione account
   const cta2 = document.getElementById('abbonamento-cta');
   if (cta2) cta2.textContent = `Abbonati con ${labels[plan]} →`;
 }
