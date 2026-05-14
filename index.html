@@ -3081,11 +3081,17 @@ function hidePaywall() {
 let _selectedPlan = 'yearly';
 function selectPlan(plan) {
   _selectedPlan = plan;
+  // Aggiorna tutte le card piano (ce ne sono due set: paywall overlay + sezione account)
   document.querySelectorAll('.paywall-plan').forEach(p => p.classList.remove('recommended'));
-  document.getElementById(`plan-${plan}`).classList.add('recommended');
+  document.querySelectorAll(`[id="plan-${plan}"]`).forEach(el => el.classList.add('recommended'));
+  const labels = { monthly:'piano mensile', yearly:'piano annuale' };
   const prices = { monthly:'3,90€/mese', yearly:'29,90€/anno' };
-  document.getElementById('paywall-cta-btn').textContent =
-    `Abbonati — ${prices[plan]} →`;
+  // Bottone paywall overlay
+  const cta1 = document.getElementById('paywall-cta-btn');
+  if (cta1) cta1.textContent = `Abbonati — ${prices[plan]} →`;
+  // Bottone sezione account
+  const cta2 = document.getElementById('abbonamento-cta');
+  if (cta2) cta2.textContent = `Abbonati con ${labels[plan]} →`;
 }
 
 async function handleSubscribe() {
