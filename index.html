@@ -2494,17 +2494,21 @@ function renderAbbonamentoView() {
   if (license.status === 'premium') {
     if(titleEl) titleEl.textContent = 'Premium attivo ⭐';
     if(subEl)   subEl.textContent = 'Accesso completo — grazie!';
-    const scadenzaStr = license.periodEnd
-      ? `Rinnovo il ${new Date(license.periodEnd).toLocaleDateString('it-IT')}`
+    const isStripe = (license.source||'').startsWith('stripe_');
+    const piano = (license.source||'').includes('monthly') ? 'Mensile' : (license.source||'').includes('yearly') ? 'Annuale' : 'Accesso con codice';
+    const scadenzaStr = isStripe
+      ? (license.periodEnd
+          ? `Rinnovo il ${new Date(license.periodEnd).toLocaleDateString('it-IT')}`
+          : `Attivato il ${new Date(license.activatedAt||Date.now()).toLocaleDateString('it-IT')}`)
       : `Attivato il ${new Date(license.activatedAt||Date.now()).toLocaleDateString('it-IT')}`;
-    const piano = (license.source||'').includes('monthly') ? 'Mensile' : (license.source||'').includes('yearly') ? 'Annuale' : 'Codice';
+    const gestisciBtn = isStripe
+      ? `<button onclick="openCustomerPortal()" style="margin-top:14px;width:100%;background:transparent;border:2px solid var(--lav-deep);color:var(--lav-deep);border-radius:20px;padding:10px;font-family:'Lora',serif;font-size:14px;font-weight:600;cursor:pointer;">⚙️ Gestisci abbonamento</button>`
+      : '';
     if(bodyEl)  bodyEl.innerHTML = `
       <div style="padding:8px 0;font-size:15px;color:var(--menta-d);font-weight:600">✓ Abbonamento attivo</div>
       <div style="font-size:14px;color:var(--grey);margin-top:4px">Piano: <strong>${piano}</strong></div>
       <div style="font-size:14px;color:var(--grey);margin-top:4px">${scadenzaStr}</div>
-      <button onclick="openCustomerPortal()" style="margin-top:14px;width:100%;background:transparent;border:2px solid var(--lav-deep);color:var(--lav-deep);border-radius:20px;padding:10px;font-family:'Lora',serif;font-size:14px;font-weight:600;cursor:pointer;">
-        ⚙️ Gestisci abbonamento
-      </button>`;
+      ${gestisciBtn}`;
     if(pianiEl) pianiEl.style.display = 'none';
   } else {
     const daysLeft = license.daysLeft || 0;
