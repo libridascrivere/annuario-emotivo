@@ -1542,7 +1542,7 @@ body {
   </div>
 
   <!-- Attiva codice -->
-  <div class="card">
+  <div class="card" id="attiva-codice-card">
     <div class="card-header"><span>🎟</span><div class="section-label">Attiva un codice</div></div>
     <div class="card-body">
       <div style="font-size:14px;color:var(--grey);font-style:italic;margin-bottom:12px;line-height:1.5">
@@ -2491,7 +2491,9 @@ function renderAbbonamentoView() {
   const bodyEl  = document.getElementById('abbonamento-stato-body');
   const pianiEl = document.getElementById('abbonamento-piani-card');
 
+  const codiceEl = document.getElementById('attiva-codice-card');
   if (license.status === 'premium') {
+    if (codiceEl) codiceEl.style.display = 'none';
     if(titleEl) titleEl.textContent = 'Premium attivo ⭐';
     if(subEl)   subEl.textContent = 'Accesso completo — grazie!';
     const isStripe = (license.source||'').startsWith('stripe_');
@@ -2522,6 +2524,7 @@ function renderAbbonamentoView() {
       : `<div style="font-size:15px;color:var(--pesca-d);font-weight:600">Il periodo di prova è terminato.</div>
          <div style="font-size:14px;color:var(--grey);margin-top:6px">Scegli un piano per continuare a usare tutte le funzioni.</div>`;
     if(pianiEl) pianiEl.style.display = 'block';
+    if (codiceEl) codiceEl.style.display = 'block';
   }
 }
 
